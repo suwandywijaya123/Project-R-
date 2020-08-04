@@ -1,0 +1,247 @@
+---
+title: "Statistical inference with the GSS data"
+output: 
+  html_document: 
+    fig_height: 4
+    highlight: pygments
+    theme: spacelab
+---
+
+## Setup
+
+### Load packages
+
+```{r load-packages, message = FALSE}
+library(ggplot2)
+library(dplyr)
+library(statsr)
+```
+
+### Load data
+
+
+```{r load-data}
+load("C:/Users/User/Desktop/Rstudio/coursera lab/inference statistic/final project/_5db435f06000e694f6050a2d43fc7be3_gss.Rdata")
+```
+
+
+* * *
+
+## Part 1: Data
+
+
+The study cannot be generalize to the entire population of United states.
+
+The GSS gather data from survery through personal-interview. Although the samples may be randomly selected, not all people are accessible for interview. There might be possibility of convinience samples being taken.  
+
+Since it is an observational study and there is no randomise assignment, it implies correlation relationship instead of causation. To imply a causation relationship, study need to be done in randomize assignment.
+
+## Part 2: Research question
+
+analysis of correlation between equality of opportunity and different races (is there an equality amongst races)
+
+1) correlation study between education and different races. Is the rate educated (at least a bachelor degree) are associated with races?
+
+2) correlation study between how easy to find the equivalent job and different races amongst those with Bachelor degree. Is the rate of easiness to find equavalent job are associated with races amongst the bachelor degree? 
+
+3) correlation study between uneployment and different race amongst those with Bachelor degree. Is the rate of unemployment are associated with races amongst the bachelor degree? 
+
+note: apart from analysing the easiness to find equavalent job and unemployment and their education qualification, more topics are need to be analysed to establish stronger correlation of equality of opportunity and different races. 
+
+* * *
+
+## Part 3: Exploratory data analysis
+1) Is the rate  of higher qualification (at least a bachelor degree) are associated with races?
+
+```{r}
+educated_race<- gss%>%
+  select(race, degree, age)%>%
+  filter (age >=30, !is.na(race), !is.na(degree))
+
+```
+
+Note: to exclude those who are below 30 years old in the observation as they may not completed their highest education
+
+```{r}
+educated_race_rate<- educated_race%>%
+  group_by(race)%>%
+  summarise (bachelordegree=sum(degree=="Bachelor")/n())%>%
+  arrange(bachelordegree)
+
+```
+
+```{r}
+ggplot (educated_race_rate, aes (x=race, y=bachelordegree)) + 
+          geom_bar(stat="identity")
+
+```
+
+from the graph analysis, it is likely that higher education qualification rate are associated with races. black race are likely to have lower education qualification rate than other races.
+
+
+2)Is the rate of easiness to find equavalent job are associated with races amongst the bachelor degree?
+```{r}
+jobfind_race<- gss%>%
+  select(race, jobfind, degree)%>%
+  filter (degree == "Bachelor", !is.na(race), !is.na(jobfind) )
+
+```
+
+```{r}
+ggplot (jobfind_race, aes (factor(race), fill=factor(jobfind))) + 
+  geom_bar(position="fill")
+```
+
+
+from the graph analysis, there is not significant difference for easiness to find equavalent jobs being observed between races amongst the bachelors 
+
+3) Is the rate of unemployment are associated with races amongst the bachelor degree? 
+
+```{r}
+unemp_race<- gss%>%
+  select(race, unemp, degree)%>%
+  filter (degree == "Bachelor", !is.na(race), !is.na(unemp) )
+
+```
+
+```{r}
+ggplot (unemp_race, aes (factor(race), fill=factor(unemp))) + 
+  geom_bar(position="fill")
+```
+
+
+from the graph analysis, it is likely that unemployment rate are associated with races. white race are likely to have lesser unemployment rate than other races
+
+* * *
+
+## Part 4: Inference
+
+1) conducting hypothesis testing. is there any relationship between different races and rate of higher education qualification?
+
+-Hypothesis:
+
+H0= race and higher education qualification are independent. higher education qualification do not vary with race.
+
+Ha= race and higher education qualification are dependent. higher education qualification vary with race.
+
+
+ -Method to be used: chi-square independant test.
+
+As we are testing the hypothesis testing in which involve teting 2 categorical variable with where at least one have more than 2 cateogry,chi-square independant test is the most suitable method.
+
+
+-condition check: before utilizing the method, we have ensure our samples meet the conditions.
+
+  1) were the samples randomly selected or assigned? Yes, the personal-interview is randomly selected.
+  
+  2) were the sampling taken without replacement, n <10% of population? with the population of united stated was more thans 100 millions since 1972, the samples used for this hypothesis test is definetely below 10%
+  
+  3) was each case only contributes to one cell in the table?yes, it cell is only contributes to one cell in the tables.
+  
+  4) was each particular scenario contain more than 5 expectred cases? Yes, it is more than 5 expected cases for each of the scenario 
+  
+
+- performing inference:
+```{r}
+inference(data= educated_race, y=degree, x=race, type="ht", 
+          statistic = "proportion", 
+          success = "Bachelor", method="theoretical", 
+          alternative="greater")
+
+```
+
+- interpret the result: 
+
+the p-value= 0.
+reject the H0 at 5% significant level in which there is relationship exist in the population in which race and higher education qualification are dependant.
+
+
+
+2) conducting hypothesis testing. is there any relationship between different races and the easiness to find equavalent job?
+
+ -Hypothesis:
+ 
+H0= race and easiness to find equavalent job are independent. easiness to find equavalent job do not vary with race.
+
+Ha= race and easiness to find equavalent job are dependent. easiness to find job equavalent vary with race.
+
+
+ -Method to be used: chi-square independant test.
+ 
+As we are testing the hypothesis testing in which involve teting 2 categorical variable with where at least one have more than 2 cateogry,chi-square independant test is the most suitable method.
+
+
+-condition check: before utilizing the method, we have ensure our samples meet the conditions.
+
+  1) were the samples randomly selected or assigned? Yes, the personal-interview is randomly selected.
+  
+  2) were the sampling taken without replacement, n <10% of population? with the population of united stated was more thans 100 millions since 1972, the samples used for this hypothesis test is definetely below 10%
+  
+  3) was each case only contributes to one cell in the table?yes, it cell is only contributes to one cell in the tables. 
+  
+  4) was each particular scenario contain more than 5 expectred cases? Yes, it is more than 5 expected cases for each of the scenario 
+  
+
+- performing inference:
+```{r}
+inference(data= jobfind_race, y=jobfind, x=race, type="ht", 
+          statistic = "proportion", 
+          success = "Very Easy", method="theoretical", 
+          alternative="greater")
+
+```
+
+- interpret the result: 
+
+the p-value= 0.3206.
+At 5% significant level, it is fail to reject the H0, there is no relationship exist in the population in which race and easinest to find equavalent job are independant.
+
+
+
+3) conducting hypothesis testing. is there any relationship between different races and the unemployment?
+
+-Hypothesis:
+
+H0= race and unemployment are independent. unemployment do not vary with race.
+
+Ha= race and unemployment are dependent. unemployment vary with race.
+
+
+ -Method to be used: chi-square independant test.
+
+As we are testing the hypothesis testing in which involve teting 2 categorical variable with where at least one have more than 2 cateogry,chi-square independant test is the most suitable method.
+
+
+-condition check: before utilizing the method, we have ensure our samples meet the conditions.
+
+  1) were the samples randomly selected or assigned? Yes, the personal-interview is randomly selected.
+  
+  2) were the sampling taken without replacement, n <10% of population? with the population of united stated was more thans 100 millions since 1972, the samples used for this hypothesis test is definetely below 10%
+  
+  3) was each case only contributes to one cell in the table?yes, it cell is only contributes to one cell in the tables.
+  
+  4) was each particular scenario contain more than 5 expectred cases? Yes, it is more than 5 expected cases for each of the scenario 
+  
+
+- performing inference:
+```{r}
+inference(data= unemp_race, y=unemp, x=race, type="ht", 
+          statistic = "proportion", 
+          success = "Very Easy", method="theoretical", 
+          alternative="greater")
+
+```
+
+- interpret the result: 
+
+the p-value= 0.1195.
+although from graph analysis shown that there are variation in unemployment rate across races, it is fail to reject the H0 at 5% significant level in which there is no relationship exist in the population in which race and unemployment are independant.
+
+
+
+
+
+Conclusion:
+
+Based on hypothesis testing, there is no significant evidence that there are inequality exist amongst different races in the america population. Given that more black races completed the higher education qualification and the rate are comparable with the white, there will be likely an equal rate of success during employment. 
+
