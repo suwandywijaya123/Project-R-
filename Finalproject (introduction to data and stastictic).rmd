@@ -1,0 +1,169 @@
+---
+title: "Exploring the BRFSS data"
+output:
+  html_document:
+    fig_height: 4
+    highlight: pygments
+    theme: spacelab
+  pdf_document: default
+---
+
+## Setup
+
+### Load packages
+
+```{r load-packages, message = FALSE}
+library(ggplot2)
+library(dplyr)
+```
+
+### Load data
+
+Make sure your data and R Markdown files are in the same directory. When loaded
+your data file will be called `brfss2013`. Delete this note when before you submit 
+your work. 
+
+```{r}
+load("C:/Users/User/Desktop/Rstudio/coursera lab/introduction to statistic/project/_384b2d9eda4b29131fb681b243a7767d_brfss2013.Rdata")  
+```
+
+
+* * *
+
+
+## Part 1: Data
+
+
+The study cannot be generalized to entire population in United states
+
+Although all states is participating after 2001 and it is randomly selected, the study is only targeted to people who are using cellular telephones and resided  in a private residence and college housing. There are people who do not used telephones as well as do not stay in college or private residences is not part of the populations.
+Moreover, there are potentially non-response such as people do not pick up the phones.
+
+Since it is and observational study, it implies correlation relationship instead of causation. To imply a causation relationship, study need to be done in randomize assignment.
+
+
+
+## Part 2: Create research questions based on data. 
+
+
+**Research quesion 1:**
+
+correlation study between income rate and affordability of medical cost amongst the veteran.Is the affordability rate of the veteran are associated with income rate?
+
+
+**Research quesion 2:**
+
+correlation between sleeping time and physical or mental health. is physical or mental health associate with sleep time
+
+
+**Research quesion 3:**
+
+
+correlation between highblood and exercise. is highblood pressure associate less frequent exercise?(since obesity and smoke can be potentially one of the factor contributing to high blood pressure, population are chosen from those normal weight and never smoke)
+
+
+* * *
+
+## Part 3: Exploratory data analysis
+
+NOTE: Insert code chunks as needed by clicking on the "Insert a new code chunk" 
+button (green button with orange arrow) above. Make sure that your code is visible
+in the project you submit. Delete this note when before you submit your work.
+
+**Research quesion 1: correlation study between income rate and affordability of medical cost amongst the veteran.Is the affordability rate of the veteran are associated with income rate?
+
+to filter to only the population of veteran and to exclude the n.a of the income. to also select the relevant column for better viewing
+
+
+```{r}
+aff_rate_income <- brfss2013 %>%
+  filter (veteran3=="Yes", !is.na(income2))%>%
+  select("medcost","income2", "veteran3")
+
+```
+
+to summarise the rate of  “unable to afford medical fee” of the respective income group. plot the graph accordingly
+
+```{r}
+aff_rate_income<- aff_rate_income%>%
+  group_by(income2)%>%
+  summarise(cannot_aff_rate= sum((medcost=="Yes")/n(), na.rm=TRUE))
+ 
+as_tibble(aff_rate_income)
+
+ggplot (data = aff_rate_income, aes(x = income2, y = cannot_aff_rate)) +
+  geom_bar(stat="identity") + 
+  theme(axis.text.x = element_text(size=8, family="TT Arial", angle = 45, hjust=1,0)) 
+
+```
+
+from the data analysis, those who are from lower income group are less likely to be able to afford medical group. 
+
+
+**Research quesion 2:correlation between sleeping time and physical or mental health. is physical or mental health associate with sleep time
+
+
+filter the unrealiable input of sleeping time (<=24 hours) and the exclude the n.a of sleeping time. select the relevant column for better viewing
+
+```{r}
+m_p_health_sleeptime<- brfss2013%>%
+  filter(sleptim1<=24,!is.na(sleptim1))%>%
+  select("physhlth","menthlth","sleptim1")
+
+```
+
+quick overview of the distribution of the how much hours people sleep
+
+```{r}
+boxplot(m_p_health_sleeptime$sleptim1)
+summary(m_p_health_sleeptime$sleptim1)
+
+```
+
+to exclude extreme outlier (1 hour sleep). summarise mean average of days physical and mental health issues in respective hours sleep.plot line graph to observe the trend
+
+```{r}
+m_p_health_sleeptime<- m_p_health_sleeptime%>%
+  filter(sleptim1>1, sleptim1<=24,!is.na(sleptim1))
+
+health_sleeptime<- m_p_health_sleeptime%>%
+  group_by(sleptim1)%>%
+  summarise(count= n(),"phyhealth_bad"= mean(physhlth, na.rm = TRUE), 
+            "menhealth_bad"= mean(menthlth, na.rm = TRUE))
+
+as_tibble(health_sleeptime)
+
+ggplot(health_sleeptime, aes(x=sleptim1)) + geom_line(aes(y=phyhealth_bad, colour="phyhealth_bad(days)")) + 
+  geom_line(aes(y=menhealth_bad, colour="menhealth_bad(days)"))
+
+```
+
+from the data analysis, 6-8 hours are more likely to be the ideal number hours of sleep. the more insufficient sleep or the more oversleep are likely to have more days of physical and mental health issues
+
+
+**Research quesion 3:correlation between highblood and exercise. is highblood pressure associate less frequent exercise?(since obesity and smoke can be potentially one of the factor contributing to high blood pressure, population are chosen from those normal weight and never smoke)
+
+filter the population to include only those who have normal weight and never smoke. select relevant group for data analysis for better viewing
+
+```{r}
+smoke_highblood<-brfss2013%>%
+  filter(X_bmi5cat== "Normal weight", X_smoker3=="Never smoked", !is.na(X_pacat1))%>%
+  select("X_pacat1", "X_rfhype5")
+
+```
+summarise the percentage of highbloods in respective to the group according to their level of exercise. plot graph to observe their trend
+
+```{r}
+rate_highblood<- smoke_highblood%>%
+  group_by(X_pacat1)%>%
+  summarise(percentage_highblood= sum(X_rfhype5=="Yes", na.rm=TRUE)/n())
+
+as_tibble(rate_highblood)
+
+
+ggplot(data= rate_highblood, aes(x = X_pacat1, y= percentage_highblood)) + 
+  geom_bar(stat="identity")
+
+```
+
+based on the analysis study, it shows that people who are exercise (even though it is infrequent) are least likely to have highblood presure. highly active or inactive exercise will also likely to have highblood pressure
